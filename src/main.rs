@@ -1,5 +1,5 @@
 use std::io::Write;
-use wiring::{
+use wiring_checker::{
     Connector, component,
     components::{
         AcCable, Ant, BiasT, ClkDistributor, EightWaySplitter, FourWaySplitter, GpsDO, LcFiber,
