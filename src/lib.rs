@@ -119,7 +119,7 @@ macro_rules! component {
 #[macro_export]
 macro_rules! new_component {
     ($var:ident, $ty:ident, $qty:expr, $desc:expr, $ctx:expr) => {
-        let $var = $ty::<$qty>::new($ctx, stringify!($var), $desc);
+        let $var = $ty::<{ $qty }>::new($ctx, stringify!($var), $desc);
     };
 }
 
