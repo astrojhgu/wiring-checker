@@ -1,14 +1,18 @@
-use std::io::Write;
+use std::{collections::BTreeMap, io::Write};
 
 pub struct D2Context<W: Write> {
     writer: W,
+    pub bom: BTreeMap<String, usize>,
 }
 
 impl<W: Write> D2Context<W> {
     pub fn new(w: W) -> Self {
         let mut w = w;
         writeln!(&mut w, "direction: right").unwrap();
-        Self { writer: w }
+        Self {
+            bom: BTreeMap::default(),
+            writer: w,
+        }
     }
 
     pub fn add_node(&mut self, node: &str) {

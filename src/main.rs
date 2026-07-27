@@ -1,10 +1,10 @@
 use std::io::Write;
 use wiring_checker::{
-    Connector, component,
+    Connector, Group, component,
     components::{
-        AcCable, Ant, BiasT, ClkDistributor, EightWaySplitter, FourWaySplitter, GpsDO, LcFiber,
-        Lna, NMale2NMaleCable, NSmaAdapter, QsfpMod, RFFilter, RawTwistedPairCable, SfpMod,
-        SmaM2SmaMCable, SmaM2SsmcMCable, T510,
+        AcCable, Ant, BiPolAnt, BiasT, ClkDistributor, EightWaySplitter, FourWaySplitter, GpsDO,
+        LcFiber, Lna, NMale2NMaleCable, NSmaAdapter, QsfpMod, RFFilter, RawTwistedPairCable,
+        SfpMod, SmaM2SmaMCable, SmaM2SsmcMCable, T510,
     },
     connect,
     d2::{D2Context, NodeGuard},
@@ -12,12 +12,12 @@ use wiring_checker::{
     ports::ScrewTerminal,
 };
 component!(Pwr5V {
-    ac_in: ScrewTerminal,
-    dc_out: ScrewTerminal
+    ac_in: (ScrewTerminal, 1),
+    dc_out: (ScrewTerminal, 1)
 });
 component!(Pwr12V {
-    ac_in: ScrewTerminal,
-    dc_out: ScrewTerminal
+    ac_in: (ScrewTerminal, 1),
+    dc_out: (ScrewTerminal, 1)
 });
 
 fn main() {
@@ -27,79 +27,104 @@ fn main() {
 
     // sma_m.connect(&sma_f);
     let mut ctx = &mut D2Context::new(std::fs::File::create("a.d2").unwrap());
-    new_component!(ant, Ant, &mut ctx, "天线x16");
-    new_component!(lna1, Lna, &mut ctx, "LNA1x32");
-    new_component!(cable1, NMale2NMaleCable, &mut ctx, "N-N同轴x32");
-    new_component!(pwr_5v, Pwr5V, &mut ctx, "5V ACDCx1");
-    new_component!(n_sma_adapter, NSmaAdapter, &mut ctx, "N-Sma转接器x32");
-    new_component!(sma2sma_cable1, SmaM2SmaMCable, &mut ctx, "sma-sma线x32");
-    new_component!(sma2sma_cable2, SmaM2SmaMCable, &mut ctx, "sma-sma线x32");
-    new_component!(filter, RFFilter, &mut ctx, "滤波器x32");
-    new_component!(pwr_12v, Pwr12V, &mut ctx, "12V ACDC");
-    new_component!(ac_cable_for_12v, AcCable, &mut ctx, "交流供电线");
-    new_component!(ac_cable_for_5v, AcCable, &mut ctx, "交流供电线");
+    new_component!(ant, BiPolAnt, 16, "天线", &mut ctx);
+    new_component!(lna1, Lna, 32, "LNA1", &mut ctx);
+    new_component!(cable1, NMale2NMaleCable, 32, "N-N同轴线", &mut ctx);
+    new_component!(pwr_5v, Pwr5V, 1, "5V ACDC", &mut ctx);
+    new_component!(n_sma_adapter, NSmaAdapter, 32, "N-Sma转接器", &mut ctx);
+    new_component!(sma2sma_cable1, SmaM2SmaMCable, 32, "sma-sma线", &mut ctx);
+    new_component!(sma2sma_cable2, SmaM2SmaMCable, 32, "sma-sma线", &mut ctx);
+    new_component!(filter, RFFilter, 32, "滤波器", &mut ctx);
+    new_component!(pwr_12v, Pwr12V, 1, "12V ACDC", &mut ctx);
+    new_component!(ac_cable_for_12v, AcCable, 1, "交流供电线", &mut ctx);
+    new_component!(ac_cable_for_5v, AcCable, 1, "交流供电线", &mut ctx);
 
     new_component!(
         eight_way_splitter_a,
         EightWaySplitter,
-        &mut ctx,
-        "1进8出分线器x1"
+        1,
+        "1进8出分线器",
+        &mut ctx
     );
     new_component!(
         four_way_splitter_a,
         FourWaySplitter,
-        &mut ctx,
-        "1进4出分线器x8"
+        8,
+        "1进4出分线器",
+        &mut ctx
     );
-    new_component!(dc_cable_a1, RawTwistedPairCable, &mut ctx, "双绞线x1");
-    new_component!(dc_cable_a2, RawTwistedPairCable, &mut ctx, "双绞线x8");
-    new_component!(dc_cable_a3, RawTwistedPairCable, &mut ctx, "双绞线x32");
+    new_component!(dc_cable_a1, RawTwistedPairCable, 1, "双绞线", &mut ctx);
+    new_component!(dc_cable_a2, RawTwistedPairCable, 8, "双绞线", &mut ctx);
+    new_component!(dc_cable_a3, RawTwistedPairCable, 32, "双绞线", &mut ctx);
 
     new_component!(
         eight_way_splitter_b,
         EightWaySplitter,
-        &mut ctx,
-        "1进8出分线器x1"
+        1,
+        "1进8出分线器",
+        &mut ctx
     );
     new_component!(
         four_way_splitter_b,
         FourWaySplitter,
-        &mut ctx,
-        "1进4出分线器x8"
+        8,
+        "1进4出分线器",
+        &mut ctx
     );
-    new_component!(dc_cable_b1, RawTwistedPairCable, &mut ctx, "双绞线x1");
-    new_component!(dc_cable_b2, RawTwistedPairCable, &mut ctx, "双绞线x8");
-    new_component!(dc_cable_b3, RawTwistedPairCable, &mut ctx, "双绞线x32");
-    new_component!(sma_ssmc, SmaM2SsmcMCable, &mut ctx, "sma-ssmc线x32");
-    new_component!(clk_distributor, ClkDistributor, &mut ctx, "10M/pps分配器");
-    new_component!(sma_sma_cable_clk_1, SmaM2SmaMCable, &mut ctx, "sma-sma线x1");
-    new_component!(sma_sma_cable_pps_1, SmaM2SmaMCable, &mut ctx, "sma-sma线x1");
+    new_component!(dc_cable_b1, RawTwistedPairCable, 1, "双绞线", &mut ctx);
+    new_component!(dc_cable_b2, RawTwistedPairCable, 8, "双绞线", &mut ctx);
+    new_component!(dc_cable_b3, RawTwistedPairCable, 32, "双绞线", &mut ctx);
+    new_component!(sma_ssmc, SmaM2SsmcMCable, 32, "sma-ssmc线", &mut ctx);
+    new_component!(
+        clk_distributor,
+        ClkDistributor,
+        1,
+        "10M/pps分配器",
+        &mut ctx
+    );
+    new_component!(
+        sma_sma_cable_clk_1,
+        SmaM2SmaMCable,
+        1,
+        "sma-sma线",
+        &mut ctx
+    );
+    new_component!(
+        sma_sma_cable_pps_1,
+        SmaM2SmaMCable,
+        1,
+        "sma-sma线",
+        &mut ctx
+    );
     new_component!(
         sma_ssmc_cable_clk_2,
         SmaM2SsmcMCable,
-        &mut ctx,
-        "sma-ssmc线x4"
+        4,
+        "sma-ssmc线",
+        &mut ctx
     );
     new_component!(
         sma_ssmc_cable_pps_2,
         SmaM2SsmcMCable,
-        &mut ctx,
-        "sma-ssmc线x4"
+        4,
+        "sma-ssmc线",
+        &mut ctx
     );
 
-    new_component!(bias_t, BiasT, &mut ctx, "Bias-Tx32");
+    new_component!(bias_t, BiasT, 32, "Bias-T", &mut ctx);
 
-    new_component!(t510, T510, &mut ctx, "T510x4");
-    new_component!(gpsdo, GpsDO, &mut ctx, "时钟源x1");
-    new_component!(sfp_mod_a, SfpMod, &mut ctx, "千兆sfp光模块x4");
-    new_component!(qsfp_mod_a, QsfpMod, &mut ctx, "100G Qsfp光模块x4");
-    new_component!(gbe_fiber, LcFiber, &mut ctx, "千兆单模光纤x4");
-    new_component!(cgbe_fiber, LcFiber, &mut ctx, "100G单模光纤x4");
+    new_component!(t510, T510, 4, "T510", &mut ctx);
+    new_component!(gpsdo, GpsDO, 1, "时钟源", &mut ctx);
+    new_component!(sfp_mod_a, SfpMod, 4, "sfp光模块", &mut ctx);
+    new_component!(qsfp_mod_a, QsfpMod, 4, "100G Qsfp光模块", &mut ctx);
+    new_component!(gbe_fiber, LcFiber, 4, "单模光纤", &mut ctx);
+    new_component!(cgbe_fiber, LcFiber, 4, "单模光纤", &mut ctx);
 
-    new_component!(sfp_mod_b, SfpMod, &mut ctx, "千兆sfp光模块x4");
-    new_component!(qsfp_mod_b, QsfpMod, &mut ctx, "100G Qsfp光模块x4");
+    new_component!(sfp_mod_b, SfpMod, 4, "sfp光模块", &mut ctx);
+    new_component!(qsfp_mod_b, QsfpMod, 4, "100G Qsfp光模块", &mut ctx);
 
     connect!(ant.rf_out, cable1.p1, &mut ctx);
+
     connect!(cable1.p2, bias_t.rf_dc, &mut ctx);
     //connect!(pwr_5v.dc_out, bias_t.dc, &mut ctx);
     connect!(pwr_5v.dc_out, dc_cable_a1.p1, &mut ctx);
@@ -151,4 +176,8 @@ fn main() {
 
     connect!(ac_cable_for_12v.p2, pwr_12v.ac_in, &mut ctx);
     connect!(ac_cable_for_5v.p2, pwr_5v.ac_in, &mut ctx);
+
+    for (k, v) in ctx.bom.iter() {
+        println!("{k}: {v}");
+    }
 }

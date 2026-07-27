@@ -1,5 +1,5 @@
 use crate::{
-    Connector, component,
+    Connector, Group, component,
     d2::{D2Context, NodeGuard},
     ports::*,
 };
@@ -7,143 +7,142 @@ use std::io::Write;
 
 component! {
     Lna{
-        rf_in: SmaFemale,
-        rf_out: SmaFemale,
-        pwr: ScrewTerminal,
+        rf_in: (SmaFemale,1),
+        rf_out: (SmaFemale,1),
+        pwr: (ScrewTerminal, 1),
     }
 }
 
 component! {
     Ant{
-        rf_out: NFemale
+        rf_out: (NFemale,1)
     }
 }
 
 component! {
     BiPolAnt{
-        rf_x_out: NFemale,
-        rf_y_out: NFemale
+        rf_out: (NFemale,2)
     }
 }
 
 component! {
     NMale2NMaleCable{
-        p1: NMale,
-        p2: NMale,
+        p1: (NMale,1),
+        p2: (NMale,1),
     }
 }
 
 component! {
     SmaM2SmaMCable{
-        p1: SmaMale,
-        p2: SmaMale,
+        p1: (SmaMale,1),
+        p2: (SmaMale,1),
     }
 }
 
 component! {
     SmaM2SsmcMCable{
-        p1: SmaMale,
-        p2: SsmcMale,
+        p1: (SmaMale, 1),
+        p2: (SsmcMale,1),
     }
 }
 
 component! {
     BiasT{
-        dc: ScrewTerminal,
-        rf: NFemale,
-        rf_dc: NFemale,
+        dc: (ScrewTerminal,1),
+        rf: (NFemale,1),
+        rf_dc: (NFemale,1),
     }
 }
 
 component! {
     DCCable{
-        input: DirectContact,
-        output: DCPlug,
+        input: (DirectContact,1),
+        output: (DCPlug,1),
     }
 }
 
 component! {
     NSmaAdapter{
-        n_side: NMale,
-        sma_side: SmaFemale,
+        n_side: (NMale,1),
+        sma_side: (SmaFemale,1),
     }
 }
 
 component! {
     RFFilter{
-        input: SmaFemale,
-        output: SmaFemale,
+        input: (SmaFemale,1),
+        output: (SmaFemale,1),
     }
 }
 component! {
     RawTwistedPairCable{
-        p1: DirectContact,
-        p2: DirectContact,
+        p1: (DirectContact,1),
+        p2: (DirectContact,1),
     }
 }
 
 component! {
     FourWaySplitter{
-        input: DirectContact,
-        output: DirectContact,
+        input: (DirectContact,1),
+        output: (DirectContact,4),
     }
 }
 
 component! {
     EightWaySplitter{
-        input: DirectContact,
-        output: DirectContact,
+        input: (DirectContact,1),
+        output: (DirectContact,8),
     }
 }
 
 component! {
     T510{
-        rf_in:SsmcFemale,
-        pps_in:SsmcFemale,
-        ref_in: SsmcFemale,
-        sfp: SFPCage,
-        qsfp:QSFPCage,
+        rf_in:(SsmcFemale,8),
+        pps_in:(SsmcFemale,1),
+        ref_in: (SsmcFemale,1),
+        sfp: (SFPCage,1),
+        qsfp:(QSFPCage,1),
     }
 }
 
 component! {
     GpsDO{
-        pps_output: SmaFemale,
-        clk_output: SmaFemale,
+        pps_output: (SmaFemale,1),
+        clk_output: (SmaFemale,1),
     }
 }
 
 component! {
     ClkDistributor{
-        pps_input: SmaFemale,
-        clk_input: SmaFemale,
-        pps_output: SmaFemale,
-        clk_output: SmaFemale,
+        pps_input: (SmaFemale,1),
+        clk_input: (SmaFemale,1),
+        pps_output: (SmaFemale,4),
+        clk_output: (SmaFemale,4),
     }
 }
 
 component! {
     SfpMod{
-        sfp_plug: SfpPlug,
-        lc_jack: LcJack,
+        sfp_plug: (SfpPlug,1),
+        lc_jack: (LcJack,1),
     }
 }
 component! {
     QsfpMod{
-        qsfp_plug: QsfpPlug,
-        lc_jack: LcJack,
+        qsfp_plug: (QsfpPlug,1),
+        lc_jack: (LcJack,1),
     }
 }
 
 component! {
     LcFiber{
-        p1: LcPlug,
-        p2: LcPlug,
+        p1: (LcPlug,1),
+        p2: (LcPlug,1),
     }
 }
 component! {
     AcCable{
-        p1: ACPlug,
-        p2: DirectContact,
+        p1: (ACPlug,1),
+        p2: (DirectContact,1),
     }
 }
