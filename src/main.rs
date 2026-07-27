@@ -2,7 +2,7 @@ use std::io::Write;
 use wiring_checker::{
     Connector, Group, component,
     components::{
-        AcCable, Ant, BiPolAnt, BiasT, ClkDistributor, EightWaySplitter, FourWaySplitter, GpsDO,
+        AcCable, BiPolAnt, BiasT, ClkDistributor, EightWaySplitter, FourWaySplitter, GpsDO,
         LcFiber, Lna, NMale2NMaleCable, NSmaAdapter, QsfpMod, RFFilter, RawTwistedPairCable,
         SfpMod, SmaM2SmaMCable, SmaM2SsmcMCable, T510,
     },
