@@ -21,12 +21,8 @@ component!(Pwr12V {
 });
 
 fn main() {
-    // let sma_m = Port::<SmaMale>::new("LNA.OUT".into());
-
-    // let sma_f = Port::<SmaFemale>::new("CABLE.IN".into());
-
-    // sma_m.connect(&sma_f);
     let mut ctx = &mut D2Context::new(std::fs::File::create("a.d2").unwrap());
+    //变量名, 类型, 数目, 描述, context
     new_component!(ant, BiPolAnt, 16, "天线", &mut ctx);
     new_component!(lna1, Lna, 32, "LNA1", &mut ctx);
     new_component!(cable1, NMale2NMaleCable, 32, "N-N同轴线", &mut ctx);
@@ -178,6 +174,6 @@ fn main() {
     connect!(ac_cable_for_5v.p2, pwr_5v.ac_in, &mut ctx);
 
     for (k, v) in ctx.bom.iter() {
-        println!("{k}: {v}");
+        println!("{k} , {v}");
     }
 }

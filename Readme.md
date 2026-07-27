@@ -1,192 +1,382 @@
-# Wiring
+# Wiring Checker
 
-**Wiring** 是一个使用 **Rust** 编写的强类型硬件连接描述库。
+**Wiring Checker** 是一个使用 Rust 编写的强类型硬件系统描述工具。
 
-它的目标不是绘制原理图，也不是替代 KiCad、Altium 等 EDA 工具，而是用于**描述硬件系统中的连接关系，在编译期检查各种接口是否能够正确连接，并自动生成 D2 系统框图。**
+它允许用户使用 Rust 描述实际硬件系统中的组件、接口和连接关系，并利用 Rust 类型系统在编译阶段检查连接是否合法，同时自动生成：
 
-本项目最初来源于射频和射电天文实验中的一个实际需求。
+- 系统框图（D2）
+- 物料清单（BOM）
 
-每次外出做野外实验之前，都需要反复检查：
-
-- 天线是否接对？
-- 电缆是否带齐？
-- 公母接头是否匹配？
-- 是否遗漏了某个转接器？
-- 光模块、光纤、电源线是否能够正确连接？
-
-这些问题如果到了实验现场才发现，往往意味着浪费大量时间，甚至导致整次实验失败。
-
-Wiring 希望把这些问题提前到**编译阶段**。
-
-如果系统能够成功编译，就意味着所有连接关系在机械接口层面都是合法的。
+它主要面向射频、通信、射电天文等复杂实验系统。
 
 ---
 
-# 特性
+## 为什么需要 Wiring Checker？
 
-- 使用 Rust 描述整个硬件系统
-- 编译期检查连接器兼容性
-- 强类型 Connector 系统
-- 自动生成 D2 系统框图
-- 易于扩展新的 Component
-- 易于扩展新的 Connector
-- API 简洁直观
+在复杂实验系统中，一个完整链路通常包含大量硬件：
+
+```
+天线
+ |
+同轴电缆
+ |
+Bias-T
+ |
+转接头
+ |
+滤波器
+ |
+LNA
+ |
+数字采集设备
+ |
+光模块
+ |
+光纤
+ |
+计算系统
+```
+
+在实际搭建或者野外实验之前，经常需要确认：
+
+- 接头是否匹配？
+- 电缆是否正确？
+- 是否遗漏转接器？
+- 信号方向是否正确？
+- 电源和信号是否混接？
+- 所需物料数量是否足够？
+
+传统方式通常依靠人工检查，容易遗漏。
+
+Wiring Checker 希望将这些检查提前到程序设计阶段：
+
+> 让编译器帮助检查硬件系统是否能够正确连接。
 
 ---
 
-# 示例
+# 核心思想
+
+Wiring Checker 将 Rust 程序作为硬件系统的唯一描述源。
+
+```
+Rust Hardware Description
+          |
+          v
+ Compile-time Checking
+          |
+          v
+ D2 Diagram Generation
+          |
+          v
+ SVG / PDF System Diagram
+```
+
+D2 只负责最终绘图，而不是系统模型。
+
+---
+
+# 基本使用方式
+
+一个硬件系统由三个部分组成：
+
+- Component（组件）
+- Port（接口）
+- Connection（连接）
+
+例如：
 
 ```rust
-let mut ctx = D2Context::new(File::create("system.d2")?);
-
-new_component!(ant, Ant, &mut ctx, "天线");
-new_component!(cable, NMale2NMaleCable, &mut ctx, "N-N 同轴");
-new_component!(lna, Lna, &mut ctx, "LNA");
-
-connect!(ant.rf_out, cable.p1, &mut ctx);
-connect!(cable.p2, lna.rf_in, &mut ctx);
+component!(Pwr5V {
+    ac_in: (ScrewTerminal, 1),
+    dc_out: (ScrewTerminal, 1)
+});
 ```
 
-生成：
+定义一个 5V 电源：
 
-```d2
-天线: {
-    ...
-}
+```
+Pwr5V
 
-N-N 同轴: {
-    ...
-}
-
-LNA: {
-    ...
-}
-
-天线.rf_out -> N-N 同轴.p1
-N-N 同轴.p2 -> LNA.rf_in
+ AC input
+    |
+ DC output
 ```
 
 ---
 
-# 工作原理
+创建组件：
 
-Wiring 将 Rust 作为硬件系统描述语言。
+```rust
+new_component!(
+    ant,
+    BiPolAnt,
+    16,
+    "天线",
+    &mut ctx
+);
 
-用户负责实例化各种硬件模块，并描述它们之间的连接关系。
-
+new_component!(
+    lna,
+    Lna,
+    32,
+    "LNA",
+    &mut ctx
+);
 ```
-Rust 程序
-    │
-    ▼
-编译期类型检查
-    │
-    ▼
-生成 D2
-    │
-    ▼
-SVG / PDF 系统框图
-```
 
-D2 只是最终的渲染输出，而不是数据源。
+其中：
 
-整个程序并不维护复杂的内部连接数据库，而是在实例化组件和建立连接的同时直接生成对应的 D2 描述。
+- `ant`：Rust 变量名
+- `BiPolAnt`：组件类型
+- `16`：数量
+- `"天线"`：描述信息
 
 ---
 
-# Connector
+连接组件：
 
-每一种连接器都对应一个 Rust 类型，例如：
+```rust
+connect!(
+    ant.rf_out,
+    cable.p1,
+    &mut ctx
+);
+```
+
+表示：
+
+```
+Antenna RF output
+        |
+        |
+      Cable
+```
+
+---
+
+# 强类型接口检查
+
+每一个硬件接口都有自己的 Rust 类型。
+
+例如：
 
 ```rust
 Port<SmaMale>
+
 Port<SmaFemale>
 
 Port<NMale>
+
 Port<NFemale>
 
 Port<QsfpPlug>
+
 Port<QsfpJack>
 ```
 
-连接兼容关系由 Trait 描述：
+接口兼容关系通过 Trait 定义：
 
 ```rust
 impl Compatible<SmaMale, SmaFemale> for () {}
-impl Compatible<SmaFemale, SmaMale> for () {}
 ```
 
 因此：
 
-```rust
-connect!(sma_male, sma_female, &mut ctx);
-```
-
-能够通过编译，而：
+合法连接：
 
 ```rust
-connect!(sma_male, n_female, &mut ctx);
+connect!(sma_male, sma_female);
 ```
 
-将在编译阶段直接报错，而无需任何运行时检查。
+非法连接：
+
+```rust
+connect!(sma_male, qsfp_jack);
+```
+
+会在编译阶段失败。
+
+不需要运行时检查。
 
 ---
 
-# 为什么使用 Rust？
+# 自动生成系统框图
 
-Rust 的类型系统非常适合表达硬件接口之间的兼容关系。
+Wiring Checker 会生成 D2 文件：
 
-Connector 类型就是 Rust 类型。
+```d2
+Antenna: {
+    RF: {
+        label: "RF output"
+    }
+}
 
-连接是否合法由编译器进行验证。
+LNA: {
+    RF_IN: {
+        label: "SMA"
+    }
+}
 
-因此，编译器本身就是一个硬件连接检查器。
+Antenna.RF -> LNA.RF_IN
+```
+
+然后可以进一步生成：
+
+- SVG
+- PNG
+- PDF
+
+用于实验设计文档。
 
 ---
 
-# 当前支持
+# BOM 自动统计
 
-目前主要面向射频实验系统，已经包含常见组件，例如：
+组件声明时可以指定数量：
+
+```rust
+new_component!(
+    lna,
+    Lna,
+    32,
+    "LNA",
+    &mut ctx
+);
+```
+
+程序自动统计：
+
+```
+LNA, 32
+N-N同轴线, 32
+SMA-SMA线, 64
+Bias-T, 32
+```
+
+方便实验准备和采购。
+
+---
+
+# 当前支持组件
+
+目前主要面向射频和射电天文前端系统：
+
+## RF
 
 - 天线
-- 同轴电缆
-- 转接头
-- Bias-T
 - LNA
 - 滤波器
-- 电源
-- 电源分配器
-- 时钟源
-- 时钟分配器
-- SFP/QSFP 光模块
-- 光纤
-- FPGA 采集设备
+- Bias-T
+- 同轴电缆
+- 转接头
 
-新的 Component 和 Connector 可以非常方便地扩展。
+## Power
+
+- AC/DC 电源
+- 双绞线
+- 电源分配器
+
+## Clock
+
+- GPSDO
+- 10 MHz / PPS 分配器
+- 时钟电缆
+
+## Optical
+
+- SFP 光模块
+- QSFP 光模块
+- LC 光纤
+
+## Digital
+
+- FPGA 采集设备接口
+
+---
+
+# 设计原则
+
+## Rust 是系统模型
+
+不是：
+
+```
+D2 文件
+   |
+   v
+硬件系统
+```
+
+而是：
+
+```
+Rust Hardware Model
+        |
+        v
+D2 Visualization
+```
+
+---
+
+## 简单优先
+
+Wiring Checker 不试图成为完整 CAD 软件。
+
+它关注的是：
+
+- 接口是否合法
+- 连接是否正确
+- 物料是否完整
+- 系统结构是否清晰
 
 ---
 
 # 未来计划
 
-除了机械连接检查之外，未来还计划加入更多类型检查，例如：
+未来可能加入：
 
-- 频率范围
+## 物理属性检查
+
+例如：
+
+- 工作频率
 - 阻抗
-- 电压等级
+- 电压范围
 - 数据速率
 - 信号方向
-- 模拟/数字接口属性
 
-并支持自动生成：
+例如：
+
+```
+50Ω RF output
+        |
+        |
+75Ω input
+
+Error:
+impedance mismatch
+```
+
+---
+
+## 自动生成文档
+
+包括：
 
 - 接线表
 - BOM
-- 系统文档
-- 测试报告
+- 实验准备清单
+- 系统接口说明
 
 ---
 
 # 项目状态
 
-目前项目仍处于早期开发阶段。
+Wiring Checker 当前处于早期开发阶段。
 
-欢迎提交 Issue、Pull Request，或贡献新的 Component、Connector 及改进建议。
+欢迎贡献新的：
+
+- Component
+- Connector
+- Compatibility rule
+- 系统模型
