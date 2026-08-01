@@ -174,6 +174,6 @@ fn main() {
     connect!(ac_cable_for_5v.p2, pwr_5v.ac_in, &mut ctx);
 
     for (k, v) in ctx.bom.iter() {
-        println!("{k} , {v}");
+        println!("{k}, {v}");
     }
 }
