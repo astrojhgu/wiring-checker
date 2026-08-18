@@ -52,6 +52,25 @@ Wiring Checker 希望将这些检查提前到程序设计阶段：
 
 > 让编译器帮助检查硬件系统是否能够正确连接。
 
+## 完全编译期检查
+
+Wiring Checker 的所有合法性检查都在**编译期完成**，无任何运行时开销：
+
+| 检查项目 | 实现方式 | 阶段 |
+|----------|----------|------|
+| 接口类型匹配（SMA ↔ SMA、N型 ↔ N型 等） | `Compatible` trait bound | 编译期 |
+| 端口/器件总数匹配（如 16 天线 × 2 端口 = 32 必须等于 32 电缆 × 1 端口） | `Eq<TOTAL, TOTAL_R>: EqCheck` trait bound | 编译期 |
+
+错误示例：
+
+```rust
+new_component!(ant, BiPolAnt, 16, "天线", &mut ctx);     // 16 × 2 = 32 端口
+new_component!(cable, NMale2NMaleCable, 16, "电缆", &mut ctx); // 16 × 1 = 16 端口
+
+connect!(ant.rf_out, cable.p1, &mut ctx);
+// 编译错误：expected 32, found 16
+```
+
 ---
 
 # 核心思想

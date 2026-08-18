@@ -9,31 +9,37 @@ pub mod components;
 pub mod d2;
 pub mod ports;
 
-pub trait Equals {}
+/// Compile-time port-count equality check.
+/// `Eq<A, B>: EqCheck` is satisfied only when `A == B`.
+pub struct Eq<const A: usize, const B: usize>;
+pub trait EqCheck {}
+impl<const N: usize> EqCheck for Eq<N, N> {}
 
-pub struct Eq<const M: usize, const N: usize> {}
-
-impl<const M: usize> Equals for Eq<M, M> {}
-
+/// A typed group of ports.
+/// - `M`: number of devices
+/// - `N`: ports per device
+/// - `TOTAL`: total port count = `M * N` (computed at the call site, avoids const-expr in where bounds)
 #[derive(Clone, Copy)]
-pub struct Group<T: Copy + Clone, const M: usize, const N: usize> {
+pub struct Group<T: Copy + Clone, const M: usize, const N: usize, const TOTAL: usize> {
     _obj: T,
     _marker: PhantomData<T>,
 }
 
-impl<T: Copy + Clone, const M: usize, const N: usize> Group<T, M, N> {
-    pub fn new(x: T) -> Group<T, M, N> {
-        Group {
+impl<T: Copy + Clone, const M: usize, const N: usize, const TOTAL: usize> Group<T, M, N, TOTAL> {
+    pub fn new(x: T) -> Self {
+        Self {
             _obj: x,
             _marker: PhantomData::default(),
         }
     }
 }
 
-impl<C: Copy + Clone + Connectable, const M: usize, const N: usize> Group<Connector<C>, M, N> {
-    pub fn connect_to<B, W, const P: usize, const Q: usize>(
+impl<C: Copy + Clone + Connectable, const M: usize, const N: usize, const TOTAL: usize>
+    Group<Connector<C>, M, N, TOTAL>
+{
+    pub fn connect_to<B, W, const P: usize, const Q: usize, const TOTAL_R: usize>(
         &self,
-        _other: Group<Connector<B>, P, Q>,
+        _other: Group<Connector<B>, P, Q, TOTAL_R>,
         self_name: &str,
         other_name: &str,
         ctx: &mut D2Context<W>,
@@ -41,15 +47,8 @@ impl<C: Copy + Clone + Connectable, const M: usize, const N: usize> Group<Connec
         B: Clone + Copy + Connectable,
         (): Compatible<C, B>,
         W: Write,
-        //Eq<{ M * N }, { P * Q }>: Equals,
+        Eq<TOTAL, TOTAL_R>: EqCheck,
     {
-        assert_eq!(
-            M * N,
-            P * Q,
-            "\n=========\n{}->{}\n=========\n",
-            self_name,
-            other_name
-        );
         ctx.add_edge(self_name, other_name);
     }
 }
@@ -64,21 +63,29 @@ macro_rules! component {
         }
     ) => {
         pub struct $name <const M: usize>
+        where
+            $(
+                [(); { M * $n }]: Sized,
+            )*
         {
             pub name: String,
             pub description: String,
             $(
-                pub $port: Group<Connector<$ty>, M, $n>,
+                pub $port: Group<Connector<$ty>, M, $n, { M * $n }>,
             )*
         }
 
-        impl<const M:usize> $name<M> {
+        impl<const M:usize> $name<M>
+        where
+            $(
+                [(); { M * $n }]: Sized,
+            )*
+        {
             pub fn new<W: Write>(
                 ctx: &mut D2Context<W>,
                 name: &str,
                 description: &str,
             ) -> Self {
-                //println!("{} | {}", description, M);
                 (*ctx.bom.entry(description.to_string()).or_insert(0))+=M;
                 let node = NodeGuard::new(
                     ctx,

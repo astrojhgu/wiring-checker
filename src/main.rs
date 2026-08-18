@@ -1,3 +1,6 @@
+#![feature(generic_const_exprs)]
+#![allow(incomplete_features)]
+
 use std::io::Write;
 use wiring_checker::{
     Connector, Group, component,
