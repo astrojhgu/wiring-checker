@@ -1,9 +1,4 @@
-use crate::{
-    Connector, Group, component,
-    d2::{D2Context, NodeGuard},
-    ports::*,
-};
-use std::io::Write;
+use crate::{component, ports::*};
 
 component! {
     Lna{
@@ -22,6 +17,18 @@ component! {
 component! {
     BiPolAnt{
         rf_out: (NFemale,2)
+    }
+}
+
+component! {
+    MwaAnt{
+        rf_out: (SmaFemale,2)
+    }
+}
+
+component! {
+    MwaAntSinglePol{
+        rf_out: (SmaFemale, 1)
     }
 }
 

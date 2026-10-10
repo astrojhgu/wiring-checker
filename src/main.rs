@@ -1,19 +1,18 @@
 #![feature(generic_const_exprs)]
 #![allow(incomplete_features)]
 
-use std::io::Write;
+use std::path::Path;
 use wiring_checker::{
-    Connector, Group, component,
+    Ctx, component, connect, new_component,
     components::{
         AcCable, BiPolAnt, BiasT, ClkDistributor, EightWaySplitter, FourWaySplitter, GpsDO,
         LcFiber, Lna, NMale2NMaleCable, NSmaAdapter, QsfpMod, RFFilter, RawTwistedPairCable,
         SfpMod, SmaM2SmaMCable, SmaM2SsmcMCable, T510,
     },
-    connect,
-    d2::{D2Context, NodeGuard},
-    new_component,
+    output,
     ports::ScrewTerminal,
 };
+
 component!(Pwr5V {
     ac_in: (ScrewTerminal, 1),
     dc_out: (ScrewTerminal, 1)
@@ -24,7 +23,8 @@ component!(Pwr12V {
 });
 
 fn main() {
-    let mut ctx = &mut D2Context::new(std::fs::File::create("a.d2").unwrap());
+    std::fs::create_dir_all("out").unwrap();
+    let mut ctx = Ctx::new(std::fs::File::create("out/system.d2").unwrap());
     //变量名, 类型, 数目, 描述, context
     new_component!(ant, BiPolAnt, 16, "天线", &mut ctx);
     new_component!(lna1, Lna, 32, "LNA1", &mut ctx);
@@ -125,7 +125,6 @@ fn main() {
     connect!(ant.rf_out, cable1.p1, &mut ctx);
 
     connect!(cable1.p2, bias_t.rf_dc, &mut ctx);
-    //connect!(pwr_5v.dc_out, bias_t.dc, &mut ctx);
     connect!(pwr_5v.dc_out, dc_cable_a1.p1, &mut ctx);
     connect!(dc_cable_a1.p2, eight_way_splitter_a.input, &mut ctx);
     connect!(eight_way_splitter_a.output, dc_cable_a2.p1, &mut ctx);
@@ -176,7 +175,14 @@ fn main() {
     connect!(ac_cable_for_12v.p2, pwr_12v.ac_in, &mut ctx);
     connect!(ac_cable_for_5v.p2, pwr_5v.ac_in, &mut ctx);
 
-    for (k, v) in ctx.bom.iter() {
-        println!("{k}, {v}");
+    let errs = ctx.errors();
+    if !errs.is_empty() {
+        eprintln!("系统描述有误，清单未生成：");
+        for e in &errs {
+            eprintln!("  - {e}");
+        }
+        std::process::exit(1);
     }
+    output::emit(&ctx, Path::new("out"), "16天线系统物料清单").unwrap();
+    println!("已生成 out/bom.md、out/wiring.md、out/checklist.html");
 }

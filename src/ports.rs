@@ -37,4 +37,11 @@ define_connector_pair!(SsmcMale, SsmcFemale);
 define_connector_pair!(SfpPlug, SFPCage);
 define_connector_pair!(QsfpPlug, QSFPCage);
 define_connector_pair!(LcPlug, LcJack);
-define_connector!(ACPlug);
+define_connector_pair!(ACPlug, ACJack);
+// 国标三眼插头。它插的墙上插座不在系统模型里，所以没有对端类型。
+define_connector!(MainsPlug);
+define_connector_pair!(Lp20Plug, Lp20Jack);
+define_connector_pair!(Rj45Plug, Rj45Jack);
+define_connector_pair!(HdmiPlug, HdmiJack);
+define_connector_pair!(UsbAPlug, UsbAJack);
+define_connector_pair!(UsbCPlug, UsbCJack);
